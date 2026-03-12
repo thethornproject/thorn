@@ -1,0 +1,29 @@
+Thorn Language License v1.0
+Copyright (c) 2026 Komori. All Rights Reserved.
+
+This license is based on the GNU Affero General Public License v3.0
+with an additional restriction (the "Public Distribution Clause").
+
+PERMISSIONS:
+- You may use, study, and modify this software freely for private or
+  internal use, including within small private groups.
+- You may contribute changes back to the official repository.
+
+CONDITIONS:
+- Any modified version distributed publicly — including but not limited
+  to publishing source code, hosting a public instance, or distributing
+  binaries — requires prior written permission from the original author.
+- "Public" means accessible outside your household or immediate private
+  group, including but not limited to GitHub repositories, websites,
+  package registries, or any platform with public visibility.
+
+TO REQUEST PERMISSION:
+  Contact: owner@thorn.hikikomori.no
+
+COPYLEFT:
+- All other terms of the GNU AGPLv3 apply, including the requirement
+  to provide source code for any permitted public distribution.
+  Full AGPLv3 text: https://www.gnu.org/licenses/agpl-3.0.txt
+
+NO WARRANTY:
+  This software is provided "as is", without warranty of any kind.
