@@ -1,0 +1,246 @@
+need time
+need math
+need random
+need events
+
+# variables
+score = 1337
+username = "komori"
+online = on
+result = void
+ports = [22, 80, 443, 8080]
+config = {"host": "localhost", "retries": 3, "verbose": on}
+angle = 1.5708
+
+# tasks
+task square(n) {
+    send n * n
+}
+
+task hypotenuse(a, b) { # i wish i was high on potenuse
+    send (square(a) + square(b)).sqrt
+}
+
+task clamp(val, lo, hi) {
+    if (val < lo) { send lo }
+    if (val > hi) { send hi }
+    send val
+}
+
+task greet(name) {
+    write(v"hello {name}, it is {now.hour}:{now.minute}")
+}
+
+task demoStrings() {
+    s = "hello world"
+    write(s.upper)
+    write(s.length)
+    write(s.toList.word)
+    write("foo" + "bar")
+    n = 42
+    write(v"the answer is {n}")
+    write(v"hypotenuse of 3,4 = {hypotenuse(3, 4)}")
+}
+
+task demoLoops() {
+    x = 1
+    loop(x <= 10) {
+        write(v"{x} squared = {square(x)}")
+        x = x + 1
+    }
+
+    loop(i = 5) {
+        write(v"tick {i}")
+    }
+
+    loop(3) {
+        write("beep")
+    }
+
+    loop(port = ports) {
+        write(v"scanning port {port}")
+    }
+
+    loop(pair = config) {
+        write(v"{pair.key}: {pair.value}")
+    }
+
+    loop(on) {
+        write("forever loop, bailing now")
+        send void
+    }
+}
+
+task demoRisk() {
+    err = risk {
+        f = read("/etc/shadow")
+        write(f.line(1))
+    }
+    if (err != void) {
+        write(v"couldn't read shadow: {err}")
+    }
+
+    err2 = risk {
+        res = reach("https://192.168.0.1/api/admin")
+        write(res.body)
+    }
+    if (err2 != void) {
+        write(v"router unreachable: {err2}")
+    }
+
+    try {
+        bad = 100 / 0
+        write(bad)
+    } catch(e) {
+        write(v"math error: {e}")
+    }
+
+    res = reach("https://self-signed.badssl.com/").force
+    write(v"got {res.status} anyway")
+
+    risk("file op failed: ") {
+        ghost = read("/tmp/doesnotexist.txt")
+        write(ghost.line.all)
+    }
+}
+
+task fetchUser(id) {
+    res = reach(v"https://jsonplaceholder.typicode.com/users/{id}")
+    send res.json
+}
+
+task demoConcurrency() {
+    a = spawn(fetchUser(1))
+    b = spawn(fetchUser(2))
+    c = spawn(fetchUser(3))
+    write(v"user 1: {a}")
+    write(v"user 2: {b}")
+    write(v"user 3: {c}")
+}
+
+task demoFiles() {
+    f = file("log.txt").force
+    f.write(v"session started {now.day}/{now.month}/{now.year}\n")
+    f.append(v"user: {username}\n")
+    f.append("ports scanned: 22 80 443 8080\n")
+
+    doc = read("log.txt")
+    write(doc.line.count)
+    write(doc.line.contains("ports"))
+    write(doc.line.starts("user"))
+    doc.replace(username, "REDACTED")
+    doc.copy("log_backup.txt")
+    doc.delete
+}
+
+task demoFolders() {
+    d = folder.create("workspace").force
+    write(d.empty)
+    write(d.path)
+    d.delete.force
+}
+
+task demoHTTP() {
+    res = reach("https://jsonplaceholder.typicode.com/posts/1")
+    write(res.status)
+    write(res.json)
+
+    payload = {"title": "test", "body": "thorn works", "userId": 1}
+    res2 = reach.post("https://jsonplaceholder.typicode.com/posts", payload)
+    write(res2.status)
+
+    res3 = reach("https://jsonplaceholder.typicode.com/posts/1") {
+        timeout: 3000
+        headers: {"Accept": "application/json"}
+    }
+    write(res3.json)
+
+    reach.put("https://jsonplaceholder.typicode.com/posts/1", payload)
+    reach.patch("https://jsonplaceholder.typicode.com/posts/1", payload)
+    reach.delete("https://jsonplaceholder.typicode.com/posts/1")
+}
+
+task demoBuiltins() {
+    write(now.year)
+    write(math.pi)
+    write(1337.sqrt)
+    write((-42).abs)
+
+    write(roll(100))
+    write(roll(1, 1337))
+    write(roll(ports))
+
+    listen("alert", task(val) {
+        write(v"event: {val}")
+    })
+    broadcast("alert", "connection dropped")
+    broadcast("alert", "packet loss 40%")
+}
+
+task demoTypes() {
+    write(1337.toStr)
+    write("42".toInt)
+    write(65.toChar)
+    write("komori".toList.letter)
+    write("hello world".toList.word)
+    write(clamp(9999, 0, 100))
+}
+
+section.global net {
+    task get(url) {
+        res = reach(url)
+        send res.json
+    }
+
+    task post(url, data) {
+        res = reach.post(url, data)
+        send res.status
+    }
+}
+
+section(main) store {
+    data = {"komori": 1337, "linus": 9001, "knuth": 42}
+
+    task get(key) {
+        if (data.has(key)) {
+            send data[key]
+        }
+        send void
+    }
+
+    task keys() {
+        send data.keys
+    }
+}
+
+section main {
+    task run() {
+        greet(username)
+        demoStrings()
+        demoLoops()
+        demoRisk()
+        demoConcurrency()
+        demoFiles()
+        demoFolders()
+        demoHTTP()
+        demoBuiltins()
+        demoTypes()
+
+        post = net.get("https://jsonplaceholder.typicode.com/posts/1")
+        write(post)
+
+        val = store.get("komori")
+        write(v"komori's score: {val}")
+
+        all = store.keys()
+        loop(k = all) {
+            write(k)
+        }
+
+        write(v"ran directly: {start}")
+    }
+}
+
+if (start) {
+    main()
+}
